@@ -1,0 +1,74 @@
+package main
+
+import (
+ "encoding/json"
+ "errors"
+ "fmt"
+ "net/http"
+ "strconv"
+ "unicode"
+)
+
+func main() {
+ http.HandleFunc("/api/v1/calculate", calculateHandler)
+ fmt.Println("Сервер запущен на http://localhost:8080")
+ http.ListenAndServe(":8080", nil)
+}
+
+func calculateHandler(w http.ResponseWriter, r *http.Request) {
+ if r.Method != http.MethodPost {
+  http.Error(w, "Метод не разрешен", http.StatusMethodNotAllowed)
+  return
+ }
+
+ var requestData map[string]string
+ err := json.NewDecoder(r.Body).Decode(&requestData)
+ if err != nil {
+  http.Error(w, err.Error(), http.StatusBadRequest)
+  return
+ }
+
+ expression, ok := requestData["expression"]
+ if !ok {
+  http.Error(w, "Не передано выражение", http.StatusBadRequest)
+  return
+ }
+
+ result, err := Calc(expression)
+ if err != nil {
+  if err.Error() == "не удалось распознать число" || err.Error() == "несбалансированные скобки" || err.Error() == "неверный символ в выражении" {
+   writeResponse(w, map[string]string{"error": "Expression is not valid"}, http.StatusUnprocessableEntity)
+  } else {
+   writeResponse(w, map[string]string{"error": "Internal server error"}, http.StatusInternalServerError)
+  }
+  return
+ }
+
+ writeResponse(w, map[string]string{"result": strconv.FormatFloat(result, 'f', -1, 64)}, http.StatusOK)
+}
+
+func writeResponse(w http.ResponseWriter, data map[string]string, statusCode int) {
+ w.Header().Set("Content-Type", "application/json")
+ w.WriteHeader(statusCode)
+ json.NewEncoder(w).Encode(data)
+}
+
+// Функция вычисления арифметического выражения
+func Calc(expression string) (float64, error) {
+ expression = removeSpaces(expression)
+ result, err := parseExpression(expression)
+ if err != nil {
+  return 0, err
+ }
+ return result, nil
+}
+
+func removeSpaces(s string) string {
+ var result []rune
+ for _, r := range s {
+  if r != ' ' {
+   result = append(result, r)
+  }
+ }
+ return string(result)
+}
