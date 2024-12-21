@@ -1,0 +1,37 @@
+Это код на языке Go, который реализует HTTP-сервер c эндпоинтом /api/v1/calculate, позволяющий пользователю отправлять POST-запросы с арифметическим выражением для вычисления. Сервер обрабатывает запросы, вычисляет результат и возвращает соответствующий JSON-ответ.
+
+для использования кода необходимо: 1) Скопировать код в файл с расширением .go; Запустить сервер, например, с помощью команды go run имя_файла.go
+
+примеры использования кода с помощью curl:
+когда программа работает успешно:
+curl --location 'http://localhost:8080/api/v1/calculate' \
+--header 'Content-Type: application/json' \
+--data '{
+  "expression": "2+2*2"
+}'
+
+лжидаемый вывод:
+{"result":"6"}
+
+когда ошибка 422 (входные данные не соответствуют требованиям приложения):
+curl --location 'http://localhost:8080/api/v1/calculate' \
+--header 'Content-Type: application/json' \
+--data '{
+  "expression": "2+2*2a"
+}'
+
+ожидаемый вывод:
+{"error": "Expression is not valid"}
+
+ошибка 500 (внутренняя ошибка сервера):
+curl --location 'http://localhost:8080/api/v1/calculate' \
+--header 'Content-Type: application/json' \
+--data '{
+  "wrong_field_name": "2+2*2"
+}'
+
+вывод:
+{"error": "Internal server error"}
+
+Инструкция по запуску кода:
+go run ./cmd/calc_service/main.go
